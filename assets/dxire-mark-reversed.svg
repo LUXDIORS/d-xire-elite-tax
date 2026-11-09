@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 76" role="img" aria-labelledby="title">
+  <title id="title">D-XIRE reversed striped X emblem</title>
+  <g fill="none" stroke="#FAF6ED" stroke-linecap="square" stroke-width="5">
+    <path d="M8 16 53 61"/>
+    <path d="M16 8 61 53"/>
+    <path d="M0 24 45 69"/>
+    <path d="M7 60 53 14"/>
+    <path d="M15 68 61 22"/>
+    <path d="M23 76 69 30"/>
+  </g>
+</svg>
