@@ -1,4 +1,4 @@
-import {estimate} from './estimator-math.mjs';
+import {estimate} from './estimator-math.mjs?v=2';
 
 const $=id=>document.getElementById(id);
 const form=$('withholding-form');
@@ -20,7 +20,15 @@ const fieldHelp={
  'business-expenses':'Enter business expenses supported by your records. Do not include personal purchases, and do not enter more than your business income in this simplified estimate.',
  'estimated-payments':'Enter federal estimated payments shown in your IRS payment confirmations or bank records. Use $0 if you made none.',
  ctc:'Enter a whole number from 0 to 10. Count only children you expect to meet the Child Tax Credit rules; use 0 if unsure.',
- 'eitc-children':'Enter a whole number from 0 to 3. Count only children you expect to meet the EITC rules; use 0 if none.'
+ 'eitc-children':'Enter a whole number from 0 to 3. Count only children you expect to meet the EITC rules; use 0 if none.',
+ 'tips-total':'Enter the tips you expect for the full year from your paystub tip totals, or $0 if none.',
+ 'overtime-total':'Enter your total overtime pay for the full year from the Overtime or OT line on your paystub, or $0 if none.',
+ seniors:'Enter 0, 1, or 2. Count only people on this return who will be 65 or older by December 31, 2026.',
+ 'spouse-ytd-pay':'Enter your spouse’s YTD gross pay minus pre-tax deductions, or leave blank if your spouse does not work.',
+ 'spouse-ytd-withheld':'Enter the YTD federal income tax from your spouse’s paystub, or leave blank.',
+ 'spouse-check-pay':'Enter one regular check’s gross pay minus pre-tax deductions from your spouse’s paystub.',
+ 'spouse-check-withheld':'Enter federal income tax from one of your spouse’s regular checks.',
+ 'spouse-checks-left':'Enter a whole number from 0 to 52 for your spouse’s remaining paychecks this year.'
 };
 
 const fieldErrors=new Map();
@@ -66,7 +74,10 @@ function toggleIncomeFields(){
 }
 $('include-w2').addEventListener('change',toggleIncomeFields);
 $('include-1099').addEventListener('change',toggleIncomeFields);
-toggleIncomeFields();
+function toggleSpouse(){const joint=$('status').value==='joint'&&$('include-w2').checked;$('spouse-fields').hidden=!joint;}
+$('status').addEventListener('change',toggleSpouse);
+$('include-w2').addEventListener('change',toggleSpouse);
+toggleIncomeFields();toggleSpouse();
 
 function readAmount(id,{required=false,whole=false,max=150000}={}){
  const el=$(id),raw=el.value.trim();
@@ -100,6 +111,19 @@ form.addEventListener('submit',event=>{
  if(hasBusiness){
   for(const [id,options] of [['business-receipts',{}],['business-expenses',{}],['estimated-payments',{}]]){data[id]=readAmount(id,options);if(data[id]===null)hasError=true;}
  }
+ let spouse=null;
+ if(hasW2&&status==='joint'){
+  const sp={};for(const [id,options] of [['spouse-ytd-pay',{}],['spouse-ytd-withheld',{}],['spouse-check-pay',{}],['spouse-check-withheld',{}],['spouse-checks-left',{whole:true,max:52}]]){sp[id]=readAmount(id,options);if(sp[id]===null)hasError=true;}
+  if(!hasError&&(sp['spouse-ytd-pay']>0||sp['spouse-check-pay']>0)){
+   if($('spouse-checks-left').value.trim()===''){showFieldError('spouse-checks-left','Enter how many regular paychecks your spouse has left this year, or 0 if none.');hasError=true;$('spouse-fields').open=true;}
+   spouse=sp;
+  }
+  if(hasError)$('spouse-fields').open=true;
+ }
+ data.tips=readAmount('tips-total');
+ data.overtime=readAmount('overtime-total');
+ data.seniors=readAmount('seniors',{whole:true,max:status==='joint'?2:1});
+ if(data.tips===null||data.overtime===null||data.seniors===null){hasError=true;$('new-deductions').open=true;}
  data.ctc=readAmount('ctc',{whole:true,max:10});
  data['eitc-children']=readAmount('eitc-children',{whole:true,max:3});
  if(data.ctc===null||data['eitc-children']===null){hasError=true;$('ctc').closest('details').open=true;}
@@ -115,6 +139,12 @@ form.addEventListener('submit',event=>{
    showFieldError('check-pretax-health','Check this per-check premium against the gross pay and 401(k) deduction from the same paycheck.');hasError=true;
   }
  }
+ if(!hasError){
+  const w2Gross=(hasW2?data['ytd-pay']+data['check-pay']*data['checks-left']:0)+(spouse?spouse['spouse-ytd-pay']+spouse['spouse-check-pay']*(spouse['spouse-checks-left']||0):0);
+  const allIncome=w2Gross+(hasBusiness?data['business-receipts']:0);
+  if(data.overtime>w2Gross){showFieldError('overtime-total','Overtime pay is higher than the projected W-2 pay entered. Overtime should already be included in your gross pay; check both amounts on your paystub.');$('new-deductions').open=true;hasError=true;}
+  if(data.tips>allIncome){showFieldError('tips-total','Tips are higher than the total income entered. Tips should already be included in your pay or 1099 income; check both amounts.');$('new-deductions').open=true;hasError=true;}
+ }
  if(hasBusiness&&!hasError&&data['business-expenses']>data['business-receipts']){
   showFieldError('business-expenses','Expenses are greater than the business income entered. Check your records and enter supported business expenses; this simplified estimator cannot calculate a business loss.');hasError=true;
  }
@@ -128,25 +158,53 @@ form.addEventListener('submit',event=>{
   const pretax401k=hasW2?data['ytd-pretax-401k']+data['check-pretax-401k']*data['checks-left']:0;
   const pretaxHealth=hasW2?data['ytd-pretax-health']+data['check-pretax-health']*data['checks-left']:0;
   const pretaxDeductions=pretax401k+pretaxHealth;
-  const wages=Math.max(0,grossPay-pretaxDeductions);
-  const withholding=hasW2?data['ytd-withheld']+data['check-withheld']*data['checks-left']:0;
+  const spouseLeft=spouse?(spouse['spouse-checks-left']||0):0;
+  const spouseWages=spouse?spouse['spouse-ytd-pay']+spouse['spouse-check-pay']*spouseLeft:0;
+  const spouseWithheld=spouse?spouse['spouse-ytd-withheld']+spouse['spouse-check-withheld']*spouseLeft:0;
+  const wages=Math.max(0,grossPay-pretaxDeductions)+spouseWages;
+  const withholding=(hasW2?data['ytd-withheld']+data['check-withheld']*data['checks-left']:0)+spouseWithheld;
   const receipts=hasBusiness?data['business-receipts']:0;
   const expenses=hasBusiness?data['business-expenses']:0;
   const estimatedPayments=hasBusiness?data['estimated-payments']:0;
   const eitcEligible=$('eitc-eligible').checked;
   const eitcChildren=eitcEligible?data['eitc-children']:0;
-  const r=estimate({status,wages,receipts,expenses,withholding,payments:estimatedPayments,ctc:data.ctc,eitcChildren,eitcEligible});
-  const due=Math.max(0,-r.balance),refund=Math.max(0,r.balance),remaining=hasW2?data['checks-left']:0;
+  const r=estimate({status,wages,receipts,expenses,withholding,payments:estimatedPayments,ctc:data.ctc,eitcChildren,eitcEligible,tips:data.tips,overtimePremium:data.overtime/3,seniors:data.seniors});
+  const due=Math.max(0,-r.balance),refund=Math.max(0,r.balance);
+  const ownLeft=hasW2?data['checks-left']:0;
+  const useSpouse=ownLeft===0&&spouseLeft>0;
+  const remaining=useSpouse?spouseLeft:ownLeft;
   const extra=remaining>0?Math.ceil(due/remaining):0;
+  const whose=useSpouse?'your spouse’s':'your';
   $('withholding-result-title').textContent='Your estimate at a glance';
   if(due>0)makeCard($('withholding-total'),'is-due','Estimated amount you may owe',money(due),'Projected federal balance after the payments and credits you entered.');
   else makeCard($('withholding-total'),'is-refund','Estimated federal refund',money(refund),'Based on the amounts and credits you entered. Your actual refund may differ.');
-  if(due>0&&hasW2&&remaining>0)makeCard($('withholding-extra'),'is-extra','Extra federal tax to request from each remaining paycheck',money(extra),'To spread the estimated balance across '+remaining+' remaining checks, ask your employer about adding this amount to federal income tax withholding.');
+  if(due>0&&hasW2&&remaining>0)makeCard($('withholding-extra'),'is-extra','Extra federal tax to add to each remaining paycheck',money(extra),'Spreads the estimated balance across '+remaining+' remaining '+(useSpouse?'checks from your spouse’s job.':'checks.'));
   else if(due>0)makeCard($('withholding-extra'),'is-extra','Estimated amount to cover',money(due),'No W-2 paychecks remain in this estimate. Review estimated tax payment options, such as IRS Form 1040-ES.');
   else makeCard($('withholding-extra'),'is-extra','Extra federal tax to request from each paycheck',money(0),'No additional withholding is suggested by this estimate. This is not a guarantee.');
+  const next=$('withholding-next');next.replaceChildren();
+  const nt=document.createElement('strong');const np=document.createElement('p');np.style.margin='0';
+  const link=(href,text)=>{const a=document.createElement('a');a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.textContent=text;return a;};
+  if(due>0&&hasW2&&remaining>0){
+   nt.textContent='Your next step';
+   np.append('Fill out a new ',link('https://www.irs.gov/pub/irs-pdf/fw4.pdf','Form W-4'),', write '+money(extra)+' on Step 4(c) “Extra withholding,” and give it to '+whose+' employer’s payroll or HR department. Keep the rest of the form the same as '+whose+' current W-4. Check '+whose+' next paystub to make sure the extra federal tax is being taken out.');
+  }else if(due>0){
+   nt.textContent='Your next step';
+   np.append('Make an estimated tax payment of about '+money(due)+' by January 15, 2027 using ',link('https://www.irs.gov/payments/direct-pay','IRS Direct Pay'),'. Choose “Estimated Tax” and “1040-ES” for tax year 2026, and keep the confirmation number for your tax preparer.');
+  }else{
+   nt.textContent='Your next step';
+   np.append('No change needed right now. Keep your current W-4, and run this estimate again if your pay, hours, or family situation changes.');
+  }
+  next.append(nt,np);
   const lines=[];
-  if(hasW2)lines.push(['Projected 2026 W-2 gross pay',grossPay],['Projected traditional 401(k) pre-tax contributions',pretax401k],['Projected pre-tax health insurance premiums',pretaxHealth],['Estimated W-2 federal taxable wages after entered deductions',wages],['Projected W-2 federal income tax withholding if unchanged',withholding]);
+  if(spouse)lines.push(['Spouse’s projected 2026 pay after pre-tax deductions',spouseWages],['Spouse’s projected federal withholding if unchanged',spouseWithheld]);
+  if(hasW2)lines.push(['Projected 2026 W-2 gross pay',grossPay],['Projected traditional 401(k) pre-tax contributions',pretax401k],['Projected pre-tax health insurance premiums',pretaxHealth],[spouse?'Combined W-2 federal taxable wages (you + spouse)':'Estimated W-2 federal taxable wages after entered deductions',wages],[spouse?'Combined federal withholding if unchanged (you + spouse)':'Projected W-2 federal income tax withholding if unchanged',withholding]);
   if(hasBusiness)lines.push(['Estimated 1099/self-employment gross receipts',receipts],['Estimated business expenses',expenses],['Estimated net business profit',r.profit],['Estimated self-employment tax',r.se],['Federal estimated tax payments entered',estimatedPayments]);
+  lines.push(['2026 standard deduction',r.deduction]);
+  if(r.tipsDed>0)lines.push(['No-tax-on-tips deduction',r.tipsDed]);
+  if(r.overtimeDed>0)lines.push(['Overtime deduction (extra half of time-and-a-half)',r.overtimeDed]);
+  if(r.seniorDed>0)lines.push(['Age 65+ deduction',r.seniorDed]);
+  if(r.qbi>0)lines.push(['Qualified business income deduction (20%)',r.qbi]);
+  lines.push(['Estimated taxable income',r.taxable]);
   lines.push(['Estimated federal tax after modeled credits',r.totalTax],['Estimated refundable credits',r.refundable],['Estimated projected refund or amount due',r.balance]);
   const dl=$('withholding-breakdown');dl.replaceChildren();
   for(const [label,n] of lines){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=money(n);dl.append(dt,dd);}
@@ -168,5 +226,5 @@ form.addEventListener('submit',event=>{
 });
 
 $('withholding-reset').addEventListener('click',()=>{
- form.reset();toggleIncomeFields();try{history.replaceState({},'',location.pathname);}catch(e){}results.hidden=true;form.hidden=false;clearErrors();$('status').focus();
+ form.reset();toggleIncomeFields();toggleSpouse();try{history.replaceState({},'',location.pathname);}catch(e){}results.hidden=true;form.hidden=false;clearErrors();$('status').focus();
 });
