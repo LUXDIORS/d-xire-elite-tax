@@ -150,7 +150,7 @@ form.addEventListener('submit',event=>{
   lines.push(['Estimated federal tax after modeled credits',r.totalTax],['Estimated refundable credits',r.refundable],['Estimated projected refund or amount due',r.balance]);
   const dl=$('withholding-breakdown');dl.replaceChildren();
   for(const [label,n] of lines){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=money(n);dl.append(dt,dd);}
-  results.hidden=false;form.hidden=true;results.focus();results.scrollIntoView({behavior:'smooth',block:'start'});
+  results.hidden=false;form.hidden=true;try{if(!location.search.includes('estimate=done'))history.pushState({},'',location.pathname+'?estimate=done');}catch(e){}results.focus();results.scrollIntoView({behavior:'smooth',block:'start'});
  }catch(error){
   const message=error.message||'We could not calculate this estimate.';
   if(message.includes('total wages plus business receipts')){
@@ -168,5 +168,5 @@ form.addEventListener('submit',event=>{
 });
 
 $('withholding-reset').addEventListener('click',()=>{
- form.reset();toggleIncomeFields();results.hidden=true;form.hidden=false;clearErrors();$('status').focus();
+ form.reset();toggleIncomeFields();try{history.replaceState({},'',location.pathname);}catch(e){}results.hidden=true;form.hidden=false;clearErrors();$('status').focus();
 });
