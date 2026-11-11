@@ -1,0 +1,32 @@
+# D-XIRE Elite Tax
+
+> D-XIRE Elite Tax is a virtual individual tax preparation practice run by LaCaya Pope. It serves W-2 households, mixed-income filers, and 1099 / self-employed workers (including Texas 1099 filers) nationwide, fully online. The 2027 tax season waitlist is open. Prices are quoted after a free review. The site's mascot is D-XIRE (pronounced "desire").
+
+## Free tools
+- [Tax Withholding Calculator 2026](https://dxireelitetax.com/withholding-estimator/): estimate if your W-4 withholding is on track, with spouse and new 2026 deductions (tips, overtime, seniors)
+- [Tax Refund Estimator](https://dxireelitetax.com/tax-refund-estimator/): rough 2026 refund or balance-due estimate
+
+## Services
+- [All services](https://dxireelitetax.com/services/)
+- [W-2 and mixed income](https://dxireelitetax.com/w2-mixed-income-taxes/)
+- [1099 and self-employed](https://dxireelitetax.com/1099-self-employed-taxes/)
+- [Texas 1099](https://dxireelitetax.com/texas-1099-self-employed-taxes/)
+- [How it works](https://dxireelitetax.com/how-it-works/)
+- [TurboTax alternative: virtual tax preparer](https://dxireelitetax.com/turbotax-alternative-virtual-tax-preparer/)
+
+## Guides
+- [When is tax season 2027?](https://dxireelitetax.com/resources/when-is-tax-season-2027/)
+- [How to fill out a W-4](https://dxireelitetax.com/resources/how-to-fill-out-w4/)
+- [How to read your pay stub](https://dxireelitetax.com/resources/how-to-read-your-pay-stub/)
+- [IRS code 570](https://dxireelitetax.com/irs-code-570-explained/)
+- [IRS code 846](https://dxireelitetax.com/irs-code-846-explained/)
+- [IRS code 971](https://dxireelitetax.com/resources/irs-code-971/)
+- [Reading IRS transcripts](https://dxireelitetax.com/resources/reading-irs-transcripts/)
+- [Why is my refund delayed?](https://dxireelitetax.com/why-is-my-refund-delayed/)
+- [Trump Accounts and Form 4547](https://dxireelitetax.com/resources/trump-accounts-form-4547/)
+- [2027 tax updates](https://dxireelitetax.com/resources/2027-tax-updates/)
+- [FAQ](https://dxireelitetax.com/faq/)
+
+## Contact
+- [About LaCaya Pope](https://dxireelitetax.com/about/)
+- [Contact](https://dxireelitetax.com/contact/)
