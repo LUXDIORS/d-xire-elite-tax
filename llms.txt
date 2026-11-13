@@ -4,6 +4,7 @@
 
 ## Free tools
 - [Tax Withholding Calculator 2026](https://dxireelitetax.com/withholding-estimator/): estimate if your W-4 withholding is on track, with spouse and new 2026 deductions (tips, overtime, seniors)
+- [1099 Tax Calculator 2026](https://dxireelitetax.com/1099-tax-calculator/): self-employment tax and income tax on 1099 income, how much to set aside, and what to pay by January 15, 2027
 - [Tax Refund Estimator](https://dxireelitetax.com/tax-refund-estimator/): rough 2026 refund or balance-due estimate
 
 ## Services
